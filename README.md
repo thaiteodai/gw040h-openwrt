@@ -85,7 +85,7 @@ Project commissioned and led by the user. Full attribution and references in CRE
 
 *(Tiếng Việt dưới đây. [English below.])*
 
-## HƯỚNG DẪN THỰC HIỆN (Dành cho người dùng không dùng AI)
+## HƯỚNG DẪN THỰC HIỆN 
 
 Phần này hướng dẫn chi tiết từng bước để flash OpenWrt tùy chỉnh lên VNPT GW040H, chỉ cần máy tính Linux, cáp USB-TTL và kết nối UART.
 
