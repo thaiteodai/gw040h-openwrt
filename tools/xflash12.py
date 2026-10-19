@@ -18,12 +18,11 @@ Phases: attach -> initramfs -> stage fw -> jump -> classify boot output.
 Exit: 11 attach fail | 12 transfer/verify fail | 14 jump fault (bootbase
 exception) | 15 no boot signal | 0 kernel up / shell up.
 """
-import sys, time, serial, re, os
+import os,sys,time,serial,re
 
 PORT, BAUD = "/dev/ttyUSB0", 115200
-INIT_F = ("/home/qyoo/openwrt-build/bin/targets/econet/en751221/"
-          "openwrt-econet-en751221-vnpt_gw040h-initramfs-kernel.bin")
-FW_F = "/home/qyoo/gw040h-openwrt/openwrt-gw040h-hybrid8.trx"
+INIT_F = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../images/openwrt-econet-en751221-vnpt_gw040h-initramfs-kernel.bin")
+FW_F = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../images/openwrt-gw040h-hybrid8.trx")
 INIT_ADDR = 0x80020000
 FW_ADDR = 0x85000000
 JUNK = b"\x00" * 128

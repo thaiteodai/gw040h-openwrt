@@ -25,7 +25,7 @@ Exit: 0 ok | 21 no shell | 22 no /dev/mem | 23 dd failed | 24 md5 mismatch
 import os, re, sys, time, hashlib, serial
 
 PORT, BAUD = "/dev/ttyUSB0", 115200
-FW_F    = "/home/qyoo/gw040h-openwrt/openwrt-gw040h-hybrid8.trx"
+FW_F    = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../images/openwrt-gw040h-hybrid8.trx")
 LOG_F   = "/tmp/opencode/phaseE.log"
 BOOT_F  = "/tmp/opencode/phaseE_boot.txt"
 FW_PHYS = 0x05000000          # 0x85000000 & 0x1fffffff  (KSEG0 -> phys)
