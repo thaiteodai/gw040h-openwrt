@@ -44,7 +44,7 @@ Custom OpenWrt build for VNPT GW040H (Econet EN751221, 256MB RAM, 128MB SPI NAND
 
 ### Completed features
 - Dual-band WiFi AP (SSID `OpenWrt`)
-- 4× GbE (functionality assumed; not exhaustively validated)
+- 4× GbE (all 4 ports confirmed working)
 - LuCI web UI
 - UBI rootfs_data autoresized (~21–29 MB writable overlay)
 - A/B kernel slots (`tclinux` / `tclinux_alt`)
@@ -311,3 +311,10 @@ See Vietnamese section above for table. If bricked: rerun 4.1 then 4.2. `tclinux
 - **4× GbE unverified.** Works in principle but not exhaustively tested.
 - **Security:** open WiFi + no root password by default — secure immediately.
 - **UART removal:** After confirming stable boots across power-cycles with UART disconnected, you may remove the jumper/wiring. Keep pinout for recovery.
+
+## Update / Cập nhật
+
+- 2026-10-19: Quick test confirmed **all 4 Ethernet ports work** (LAN). Updated documentation to reflect this.
+
+
+**Update (2026-10-19):** Quick test confirmed all 4 Ethernet ports are functional (LAN). Documentation updated.
