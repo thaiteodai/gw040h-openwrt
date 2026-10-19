@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+/dts-v1/;
+
+#include "en751221.dtsi"
+
+/ {
+	model = "VNPT GW040H";
+	compatible = "vnpt,gw040h", "econet,en751221";
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00000000 0x10000000>;
+	};
+
+	/* Scratch buffer for the serial (xmodem) flashing procedure: the
+	 * OEM bootloader stages the whole firmware image at 0x85000000
+	 * (physical 0x05000000) before "jump", and the rescue initramfs
+	 * reads it back through /dev/mem. Reserve it so the kernel's page
+	 * allocator never hands these pages out - a single clobbered byte
+	 * silently corrupts the image. 16 MiB covers the 9 MiB image. */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		staging@5000000 {
+			reg = <0x05000000 0x01000000>;
+			no-map;
+		};
+	};
+
+	chosen {
+		stdout-path = "/serial@1fbf0000:115200";
+		linux,usable-memory-range = <0x00020000 0x0ffe0000>;
+		/* Attach UBI to the nested "rootfs_ubi" partition, which is a
+		 * window over the 34 MiB "data" region (flash offset 0x1880000)
+		 * rather than the old 8 MiB window inside the tclinux slot.
+		 * The window inside tclinux could not grow past tclinux_alt
+		 * (0xc80000), which left rootfs_data below UBIFS' 17-LEB
+		 * minimum once LuCI + wpad were added, so the overlay was
+		 * unwritable. On the 34 MiB region rootfs_data auto-sizes to
+		 * ~29 MiB. Using an explicit ubi.mtd= bootarg also disables
+		 * the auto-attach of the "data" partition. */
+		bootargs = "console=ttyS0,115200 ubi.mtd=rootfs_ubi";
+	};
+};
+
+&nand {
+	status = "okay";
+	econet,bmt;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		partition@0 {
+			label = "bootloader";
+			reg = <0x0 0x40000>;
+			read-only;
+		};
+
+		partition@40000 {
+			label = "romfile";
+			reg = <0x40000 0x40000>;
+			read-only;
+		};
+
+		partition@80000 {
+			label = "tclinux";
+			reg = <0x80000 0xc00000>;
+			econet,enable-remap;
+		};
+
+		partition@c80000 {
+			label = "tclinux_alt";
+			reg = <0xc80000 0xc00000>;
+		};
+
+		/* Window over the 34 MiB region at flash absolute 0x1880000
+		 * (the OEM "data" partition) that now hosts the whole UBI: the
+		 * squashfs "rootfs" volume plus a rootfs_data overlay which
+		 * auto-sizes to the remaining ~29 MiB. The image's UBI payload
+		 * is written here directly by the flasher (mtd write to
+		 * "rootfs_ubi"); it no longer sits inside the tclinux slot.
+		 * The old 8 MiB window inside tclinux could not grow past
+		 * tclinux_alt (0xc80000), which left rootfs_data below UBIFS'
+		 * 17-LEB minimum once LuCI + wpad were added, leaving the
+		 * overlay unwritable.
+		 *
+		 * ofpart_core.c only walks DIRECT children of the "partitions"
+		 * node and has no overlap rejection, so a top-level node is the
+		 * way to name a sub-region for ubi.mtd=. Deliberately not named
+		 * "rootfs" and no linux,rootfs property, so ROOT_DEV is not
+		 * hijacked to a raw mtdblock. No econet,enable-remap: UBI does
+		 * its own bad block management. The OEM "data" partition is
+		 * intentionally NOT declared, so that nothing (bootloader,
+		 * kernel default or userspace) can attach a second UBI instance
+		 * to the same flash region - two UBI instances over one region
+		 * would fight over the erase counters and corrupt both. */
+		partition@1880000 {
+			label = "rootfs_ubi";
+			reg = <0x1880000 0x2200000>;
+		};
+
+		partition@3a80000 {
+			label = "yaffs";
+			reg = <0x3a80000 0x2400000>;
+		};
+
+		partition@5e80000 {
+			label = "safedata";
+			reg = <0x5e80000 0xa00000>;
+		};
+
+		partition@7520000 {
+			label = "reservearea";
+			reg = <0x7520000 0x80000>;
+			nvmem-layout {
+				compatible = "fixed-layout";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				/* Factory MT7615 EEPROM (macro "0x7615" in the
+				 * low endian chip-id field at 0x000, MAC at
+				 * 0x004). One MT7615 serves both bands.
+				 * mt7615_eeprom_load() requests
+				 * MT7615_EEPROM_FULL_SIZE (0x4da8) bytes via
+				 * nvmem; a shorter cell makes the read fail
+				 * with -EINVAL and mt76_eeprom_init() then
+				 * quietly continues with a zeroed EEPROM.
+				 * Only the first 0x400 bytes (the MT7615 base
+				 * EEPROM) are populated in flash - the
+				 * DCOC/TXDPD tail stays 0xff, which is fine
+				 * because MT_EE_CALDATA_FLASH (0x052) is 0x00
+				 * here, so those tables are never read. */
+				eeprom_mt7615: eeprom@20000 {
+					reg = <0x20000 0x4da8>;
+				};
+			};
+		};
+	};
+};
+
+&gmac0 {
+	status = "okay";
+};
+
+/* The WiFi module is a single MediaTek MT7615 on PCIe controller 1
+ * (1fb83000). It enumerates as 14c3:7615 and provides both bands from
+ * the calibration data stored in "reservearea". PCIe controller 0
+ * (1fb81000) reports a link timeout - nothing is attached there. */
+&pcie1 {
+	status = "okay";
+};
+
+&slot1 {
+	wifi@0,0 {
+		compatible = "mediatek,mt76";
+		reg = <0x0000 0 0 0 0>;
+		nvmem-cells = <&eeprom_mt7615>;
+		nvmem-cell-names = "eeprom";
+	};
+};
