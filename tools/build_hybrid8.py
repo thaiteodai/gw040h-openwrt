@@ -1,22 +1,64 @@
 #!/usr/bin/env python3
-"""GW040H hybrid5: same as hybrid3 but WITHOUT the 503-byte download wrapper.
+"""Wrap a built GW040H tclinux-trx image in the 2RDH hybrid layout.
 
 The bootbase reads the "2RDH" header at flash offset 0 of tclinux (upstream
 tclinux-trx format); the 503-byte scrambled prefix in the factory file is a
 web-download envelope only. Layout:
-  [0x000 .. 0x100)   fresh 256B "2RDH" header
+  [0x000 .. 0x100)    fresh 256B "2RDH" header
   [0x100 .. 0x400000) LZMA kernel (from built image) + zero pad
-  [0x400000 ..)      UBI payload (lands at flash 0x480000 = DTS rootfs_ubi)
-"""
-import struct, zlib
+  [0x400000 ..)       UBI payload (lands at flash 0x480000 = DTS rootfs_ubi)
 
-BUILT = "/home/qyoo/openwrt-build/bin/targets/econet/en751221/openwrt-econet-en751221-vnpt_gw040h-squashfs-tclinux.trx"
-OUT = "/home/qyoo/gw040h-openwrt/openwrt-gw040h-hybrid8.trx"
+Usage:
+  tools/build_hybrid8.py [BUILT_TRX] [-o OUT_TRX]
+
+BUILT_TRX defaults to ../openwrt/bin/targets/econet/en751221/
+openwrt-econet-en751221-vnpt_gw040h-squashfs-tclinux.trx (i.e. a sibling
+OpenWrt checkout) and can also come from the BUILT_TRX environment variable.
+OUT_TRX defaults to images/openwrt-gw040h-hybrid8.trx in this repo.
+"""
+import argparse
+import os
+import struct
+import sys
+import zlib
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+DEFAULT_BUILT = (
+    REPO.parent
+    / "openwrt/bin/targets/econet/en751221"
+    / "openwrt-econet-en751221-vnpt_gw040h-squashfs-tclinux.trx"
+)
+DEFAULT_OUT = REPO / "images/openwrt-gw040h-hybrid8.trx"
 
 HDR_LEN = 256
 UBI_OFF = 0x400000      # UBI must land at file/flash-slot offset 0x400000
 
-built = open(BUILT, "rb").read()
+ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+ap.add_argument(
+    "built",
+    nargs="?",
+    default=os.environ.get("BUILT_TRX", str(DEFAULT_BUILT)),
+    help="built squashfs-tclinux.trx (default: %(default)s)",
+)
+ap.add_argument(
+    "-o", "--out",
+    default=os.environ.get("OUT_TRX", str(DEFAULT_OUT)),
+    help="hybrid output file (default: %(default)s)",
+)
+args = ap.parse_args()
+
+BUILT = Path(args.built)
+OUT = Path(args.out)
+
+if not BUILT.is_file():
+    sys.exit(
+        f"error: built image not found: {BUILT}\n"
+        "Build the firmware first (make menuconfig -> Econet EN751221 -> "
+        "VNPT GW040H) or pass the path explicitly."
+    )
+
+built = BUILT.read_bytes()
 assert built[UBI_OFF:UBI_OFF + 3] == b"UBI", "no UBI# at 0x400000 in built image"
 
 kernel_region = built[0:UBI_OFF - HDR_LEN]     # LZMA + zero pad
@@ -59,6 +101,7 @@ assert loadaddr == 0x80002000
 assert v[UBI_OFF:UBI_OFF + 3] == b"UBI"
 assert bytes(v[128:256]) == b"\0" * 128
 
-open(OUT, "wb").write(img)
+OUT.parent.mkdir(parents=True, exist_ok=True)
+OUT.write_bytes(img)
 print(f"OK wrote {OUT} ({len(img)} bytes)")
 print(f"kernellen=0x{klen:x} rootfslen=0x{rlen:x} totlen=0x{tl:x} crc=0x{vcrc:08x}")

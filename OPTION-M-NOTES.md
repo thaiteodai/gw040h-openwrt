@@ -1,5 +1,11 @@
 # GW040H build/flash log — "Option M" (writable overlay + LuCI + WiFi defaults)
 
+> **Historical session log / ghi chú lịch sử.** Paths below (`/home/qyoo/openwrt-build`,
+> `/home/qyoo/gw040h-openwrt`) refer to the build machine used at the time; the current
+> tree is `openwrt/` next to this repo and `tools/build_hybrid8.py` now takes the built
+> image as an argument (see `tools/README.md`). The recorded sizes/MD5 still match
+> `images/openwrt-gw040h-hybrid8.trx`.
+
 ## Goal
 Custom OpenWrt for VNPT GW040H (Econet EN751221, 256 MB RAM, 128 MB SPI NAND),
 with **LuCI**, a **writable, persistent overlay**, dual-band WiFi, and flashing

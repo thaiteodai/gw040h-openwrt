@@ -8,7 +8,7 @@ LOG=/tmp/opencode/autoflash9.log
 : > "$LOG"
 echo "AUTOFLASH9 START $(date '+%F %T')" >> "$LOG"
 
-cd /home/qyoo/gw040h_build_session || exit 99
+cd "$(dirname "$0")" || exit 99
 
 python3 xflash12.py > /tmp/opencode/xflash12.log 2>&1
 rc=$?

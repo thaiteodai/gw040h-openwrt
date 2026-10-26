@@ -1,7 +1,7 @@
 # Credits / Cảm ơn
 
 ## Core contributors / Người đóng góp chính
-- Project lead / Người thực hiện: **[Your Name]** (the user who commissioned this work)
+- Project lead / Người thực hiện: @thaiteodai (the user who commissioned this work)
 
 ## Community research & references / Nghiên cứu cộng đồng và tham khảo
 
@@ -24,6 +24,7 @@ This project builds upon prior work and public resources, particularly:
 ## Special thanks / Lời cảm ơn đặc biệt
 - The OpenWrt econet target maintainers and contributors for EN751221/EN7528 support
 - Community members who published firmware dumps and analysis for VNPT ONTs
+- @cuongDinh105, @ResearcherPT
 
 Credit is given to all referenced work. Any omissions are accidental — please contact to correct.
 
